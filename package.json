@@ -1,0 +1,13 @@
+{
+  "name": "silicon-colesium",
+  "version": "1.0.0",
+  "description": "AI Meme Trading Intent Agent",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "dependencies": {
+    "openai": "^4.78.0"
+  }
+}
