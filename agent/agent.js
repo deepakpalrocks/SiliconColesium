@@ -1,7 +1,7 @@
 /**
  * Enhanced AI trading agent.
  * Combines market data, Twitter sentiment, and portfolio state
- * to produce structured trade decisions via OpenAI GPT-4.1.
+ * to produce structured trade decisions via Google Gemini.
  */
 
 /**
@@ -140,8 +140,8 @@ function fmtN(n) {
 }
 
 /**
- * Run the trading agent.
- * @param {import('openai').default} client - OpenAI client
+ * Run the trading agent using Groq (OpenAI-compatible API).
+ * @param {import('openai').default} client - OpenAI-compatible client
  * @param {import('../models/types.js').TradingConfig} cfg
  * @param {Map<string, any>} [marketData] - Token market data (optional)
  * @param {any[]} [sentimentData] - Twitter sentiment (optional)
@@ -154,7 +154,7 @@ export async function runTradeAgent(
   sentimentData = []
 ) {
   const response = await client.chat.completions.create({
-    model: "gpt-4.1",
+    model: "llama-3.3-70b-versatile",
     messages: [
       { role: "system", content: systemPrompt() },
       { role: "user", content: buildPrompt(cfg, marketData, sentimentData) },
@@ -164,7 +164,7 @@ export async function runTradeAgent(
   });
 
   const choice = response.choices[0];
-  if (!choice) throw new Error("No choices returned from OpenAI");
+  if (!choice) throw new Error("No response from Groq");
 
   const raw = choice.message.content;
   try {

@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { parseArgs } from "node:util";
 import OpenAI from "openai";
 import { runTradeAgent } from "./agent/agent.js";
@@ -12,9 +13,9 @@ const { values } = parseArgs({
   },
 });
 
-const apiKey = process.env.OPENAI_API_KEY;
+const apiKey = process.env.GROQ_API_KEY;
 if (!apiKey) {
-  console.error("Error: OPENAI_API_KEY environment variable is required");
+  console.error("Error: GROQ_API_KEY environment variable is required");
   process.exit(1);
 }
 
@@ -55,7 +56,10 @@ if (cfg.currentHoldings.length > 0) {
 console.log();
 
 // --- Run agent ---
-const client = new OpenAI({ apiKey });
+const client = new OpenAI({
+  apiKey,
+  baseURL: "https://api.groq.com/openai/v1",
+});
 
 try {
   const decision = await runTradeAgent(client, cfg);
