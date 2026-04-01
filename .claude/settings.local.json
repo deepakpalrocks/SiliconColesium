@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(test:*)",
+      "Bash(cd D:/Magpie/SiliconColesium && go mod tidy 2>&1)",
+      "Bash(echo not found in PATH:*)",
+      "Bash(cd D:/Magpie/SiliconColesium && npm install 2>&1)",
+      "Bash(echo Syntax OK:*)",
+      "Bash(gh auth:*)",
+      "Bash(winget install:*)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI\" && gh auth status 2>&1)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI\" && echo \"Y\" | gh auth login --web -p https 2>&1)",
+      "Bash(cd:*)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI\" && gh repo create SiliconColesium --public --source D:/Magpie/SiliconColesium --push --description \"AI Meme Trading Intent Agent - Node.js CLI using OpenAI GPT-4.1\" 2>&1)",
+      "WebSearch",
+      "Bash(cd D:/Magpie/SiliconColesium/backend && npm install 2>&1)",
+      "Bash(rm -rf D:/Magpie/SiliconColesium/backend/node_modules D:/Magpie/SiliconColesium/backend/package-lock.json && cd D:/Magpie/SiliconColesium/backend && npm install 2>&1)",
+      "Bash(cd D:/Magpie/SiliconColesium/frontend && npm install 2>&1)",
+      "Bash(true:*)",
+      "Bash(cd D:/Magpie/SiliconColesium/backend && node -e \"\nimport 'dotenv/config';\nimport { initDb, queryAll } from './src/db/database.js';\nimport { evaluateAllAgents } from './src/cron/trader.js';\n\nawait initDb\\(\\);\nconsole.log\\('Agents:', queryAll\\('SELECT id, name, current_balance FROM agents'\\)\\);\nawait evaluateAllAgents\\(\\);\nconsole.log\\('After eval - Agents:', queryAll\\('SELECT id, name, current_balance FROM agents'\\)\\);\nconsole.log\\('Decisions:', queryAll\\('SELECT id, should_trade, reasoning FROM decisions'\\)\\);\nconsole.log\\('Trades:', queryAll\\('SELECT * FROM trades'\\)\\);\nconsole.log\\('Holdings:', queryAll\\('SELECT * FROM holdings'\\)\\);\n\" 2>&1)",
+      "Bash(cd D:/Magpie/SiliconColesium/frontend && npx vite build 2>&1)"
+    ]
+  }
+}
