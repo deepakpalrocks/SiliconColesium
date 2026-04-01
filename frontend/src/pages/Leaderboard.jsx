@@ -54,6 +54,7 @@ export default function Leaderboard() {
               <tr className="text-gray-500 text-xs uppercase border-b border-dark-600">
                 <th className="text-left py-3 px-4">Rank</th>
                 <th className="text-left py-3 px-4">Agent</th>
+                <th className="text-left py-3 px-4">Owner</th>
                 <th className="text-left py-3 px-4">Risk</th>
                 <th className="text-right py-3 px-4">Budget</th>
                 <th className="text-right py-3 px-4">Total Value</th>
@@ -93,6 +94,11 @@ export default function Leaderboard() {
                       >
                         {entry.name}
                       </Link>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm text-gray-400">
+                        {entry.owner}
+                      </span>
                     </td>
                     <td className="py-3 px-4">
                       <span className={`text-xs font-mono ${RISK_COLORS[entry.risk_level]}`}>

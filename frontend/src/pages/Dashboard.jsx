@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getAgents, triggerEvaluation } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import AgentCard from "../components/AgentCard";
 
-export default function Dashboard({ userId }) {
+export default function Dashboard() {
+  const { user, isRegistered } = useAuth();
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [evaluating, setEvaluating] = useState(false);
@@ -12,11 +14,11 @@ export default function Dashboard({ userId }) {
     loadAgents();
     const interval = setInterval(loadAgents, 30000);
     return () => clearInterval(interval);
-  }, [userId]);
+  }, [user]);
 
   async function loadAgents() {
     try {
-      const data = await getAgents(userId);
+      const data = await getAgents(user?.id);
       setAgents(data);
     } catch (err) {
       console.error("Failed to load agents:", err);
@@ -29,7 +31,6 @@ export default function Dashboard({ userId }) {
     setEvaluating(true);
     try {
       await triggerEvaluation();
-      // Wait a bit then reload
       setTimeout(loadAgents, 3000);
     } catch (err) {
       alert("Evaluation failed: " + err.message);
@@ -45,6 +46,19 @@ export default function Dashboard({ userId }) {
       </div>
     );
   }
+
+  if (!isRegistered) {
+    return (
+      <div className="text-center py-20 bg-dark-800 rounded-lg border border-dark-600">
+        <p className="text-gray-400 text-lg mb-2">Welcome to Silicon Coliseum</p>
+        <p className="text-gray-600 text-sm mb-6">
+          Connect your wallet and sign up to create your AI trading agent
+        </p>
+      </div>
+    );
+  }
+
+  const hasAgent = agents.length > 0;
 
   return (
     <div>
@@ -63,12 +77,14 @@ export default function Dashboard({ userId }) {
           >
             {evaluating ? "Evaluating..." : "Run Evaluation Now"}
           </button>
-          <Link
-            to="/create"
-            className="px-4 py-2 bg-accent-green/20 border border-accent-green/30 rounded text-sm text-accent-green hover:bg-accent-green/30 transition-colors font-medium"
-          >
-            + Create Agent
-          </Link>
+          {!hasAgent && (
+            <Link
+              to="/create"
+              className="px-4 py-2 bg-accent-green/20 border border-accent-green/30 rounded text-sm text-accent-green hover:bg-accent-green/30 transition-colors font-medium"
+            >
+              + Create Agent
+            </Link>
+          )}
         </div>
       </div>
 

@@ -39,6 +39,9 @@ function migrate() {
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       username TEXT UNIQUE NOT NULL,
+      wallet_address TEXT UNIQUE NOT NULL,
+      signature TEXT NOT NULL,
+      message TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now'))
     )
   `);
@@ -95,6 +98,16 @@ function migrate() {
       FOREIGN KEY (agent_id) REFERENCES agents(id)
     )
   `);
+  // Migrate existing users table to add new columns if missing
+  try {
+    const testStmt = db.prepare("SELECT wallet_address FROM users LIMIT 1");
+    testStmt.free();
+  } catch {
+    try { db.run("ALTER TABLE users ADD COLUMN wallet_address TEXT DEFAULT ''"); } catch {}
+    try { db.run("ALTER TABLE users ADD COLUMN signature TEXT DEFAULT ''"); } catch {}
+    try { db.run("ALTER TABLE users ADD COLUMN message TEXT DEFAULT ''"); } catch {}
+  }
+
   saveDb();
 }
 

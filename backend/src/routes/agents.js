@@ -11,9 +11,18 @@ router.get("/", (req, res) => {
 
   let agents;
   if (user_id) {
-    agents = queryAll("SELECT * FROM agents WHERE user_id = ? ORDER BY created_at DESC", [user_id]);
+    agents = queryAll(
+      `SELECT a.*, u.username as owner FROM agents a
+       LEFT JOIN users u ON a.user_id = u.id
+       WHERE a.user_id = ? ORDER BY a.created_at DESC`,
+      [user_id]
+    );
   } else {
-    agents = queryAll("SELECT * FROM agents ORDER BY created_at DESC");
+    agents = queryAll(
+      `SELECT a.*, u.username as owner FROM agents a
+       LEFT JOIN users u ON a.user_id = u.id
+       ORDER BY a.created_at DESC`
+    );
   }
 
   const result = agents.map((a) => ({
@@ -27,7 +36,12 @@ router.get("/", (req, res) => {
 
 // GET /api/agents/:id - get a single agent
 router.get("/:id", (req, res) => {
-  const agent = queryOne("SELECT * FROM agents WHERE id = ?", [req.params.id]);
+  const agent = queryOne(
+    `SELECT a.*, u.username as owner FROM agents a
+     LEFT JOIN users u ON a.user_id = u.id
+     WHERE a.id = ?`,
+    [req.params.id]
+  );
   if (!agent) return res.status(404).json({ error: "Agent not found" });
 
   const holdings = queryAll("SELECT * FROM holdings WHERE agent_id = ?", [agent.id]);
@@ -75,13 +89,21 @@ router.post("/", (req, res) => {
     return res.status(400).json({ error: "Budget must be between $10 and $100,000" });
   }
 
-  // Ensure user exists (auto-create for MVP)
+  // Verify user exists (must be signed up)
   const existingUser = queryOne("SELECT id FROM users WHERE id = ?", [user_id]);
   if (!existingUser) {
-    execute("INSERT INTO users (id, username) VALUES (?, ?)", [
-      user_id,
-      `user_${user_id.slice(0, 8)}`,
-    ]);
+    return res.status(401).json({ error: "You must sign up before creating an agent" });
+  }
+
+  // Free tier: only 1 agent per user
+  const agentCount = queryOne(
+    "SELECT COUNT(*) as count FROM agents WHERE user_id = ?",
+    [user_id]
+  );
+  if (agentCount && agentCount.count >= 1) {
+    return res.status(403).json({
+      error: "Free tier allows only 1 AI agent. Upgrade to create more.",
+    });
   }
 
   const id = uuidv4();

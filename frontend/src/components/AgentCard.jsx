@@ -24,9 +24,16 @@ export default function AgentCard({ agent }) {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h3 className="font-semibold text-white">{agent.name}</h3>
-          <span className={`text-xs font-mono ${RISK_COLORS[agent.risk_level]}`}>
-            {agent.risk_level.toUpperCase()}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-mono ${RISK_COLORS[agent.risk_level]}`}>
+              {agent.risk_level.toUpperCase()}
+            </span>
+            {agent.owner && (
+              <span className="text-xs text-gray-500">
+                by {agent.owner}
+              </span>
+            )}
+          </div>
         </div>
         <span
           className={`w-2 h-2 rounded-full mt-1 ${

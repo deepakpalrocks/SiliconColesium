@@ -7,7 +7,11 @@ const router = Router();
 // GET /api/leaderboard - ranked agents by PnL
 router.get("/", async (_req, res) => {
   try {
-    const agents = queryAll("SELECT * FROM agents ORDER BY created_at DESC");
+    const agents = queryAll(
+      `SELECT a.*, u.username as owner FROM agents a
+       LEFT JOIN users u ON a.user_id = u.id
+       ORDER BY a.created_at DESC`
+    );
     if (!agents.length) return res.json([]);
 
     // Collect all holdings and unique tokens
@@ -61,6 +65,7 @@ router.get("/", async (_req, res) => {
       return {
         id: agent.id,
         name: agent.name,
+        owner: agent.owner || "Unknown",
         risk_level: agent.risk_level,
         initial_budget: agent.initial_budget,
         current_balance: agent.current_balance,

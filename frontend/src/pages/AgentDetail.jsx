@@ -95,6 +95,11 @@ export default function AgentDetail() {
             <span className={`text-sm font-mono ${RISK_COLORS[agent.risk_level]}`}>
               {agent.risk_level.toUpperCase()}
             </span>
+            {agent.owner && (
+              <span className="text-sm text-gray-500">
+                by {agent.owner}
+              </span>
+            )}
           </div>
           {agent.personality && (
             <p className="text-gray-500 text-sm mt-1 max-w-lg">

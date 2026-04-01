@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getTokens, createAgent } from "../api/client";
+import { getTokens, createAgent, getAgents } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 
 const RISK_OPTIONS = [
   {
@@ -29,8 +30,9 @@ const RISK_OPTIONS = [
   },
 ];
 
-export default function CreateAgent({ userId }) {
+export default function CreateAgent() {
   const navigate = useNavigate();
+  const { user, isRegistered } = useAuth();
   const [tokens, setTokens] = useState([]);
   const [form, setForm] = useState({
     name: "",
@@ -41,10 +43,26 @@ export default function CreateAgent({ userId }) {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [hasAgent, setHasAgent] = useState(false);
+  const [checkingLimit, setCheckingLimit] = useState(true);
 
   useEffect(() => {
     getTokens().then(setTokens).catch(console.error);
   }, []);
+
+  // Check if user already has an agent (free tier)
+  useEffect(() => {
+    if (!user?.id) {
+      setCheckingLimit(false);
+      return;
+    }
+    getAgents(user.id)
+      .then((agents) => {
+        setHasAgent(agents.length > 0);
+      })
+      .catch(console.error)
+      .finally(() => setCheckingLimit(false));
+  }, [user]);
 
   function toggleToken(symbol) {
     setForm((prev) => ({
@@ -65,13 +83,45 @@ export default function CreateAgent({ userId }) {
 
     setSubmitting(true);
     try {
-      const agent = await createAgent({ ...form, user_id: userId });
+      const agent = await createAgent({ ...form, user_id: user.id });
       navigate(`/agent/${agent.id}`);
     } catch (err) {
       setError(err.message);
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (!isRegistered) {
+    return (
+      <div className="text-center py-20 bg-dark-800 rounded-lg border border-dark-600 max-w-2xl mx-auto">
+        <p className="text-gray-400 text-lg mb-2">Authentication Required</p>
+        <p className="text-gray-600 text-sm">
+          Connect your wallet and sign up to create an AI trading agent.
+        </p>
+      </div>
+    );
+  }
+
+  if (checkingLimit) {
+    return <div className="text-gray-500 text-center py-20">Loading...</div>;
+  }
+
+  if (hasAgent) {
+    return (
+      <div className="text-center py-20 bg-dark-800 rounded-lg border border-dark-600 max-w-2xl mx-auto">
+        <p className="text-gray-400 text-lg mb-2">Free Tier Limit Reached</p>
+        <p className="text-gray-600 text-sm mb-4">
+          You can only create 1 AI agent on the free tier.
+        </p>
+        <button
+          onClick={() => navigate("/")}
+          className="px-6 py-2.5 bg-accent-green/20 border border-accent-green/30 rounded text-accent-green hover:bg-accent-green/30 transition-colors font-medium"
+        >
+          View Your Agent
+        </button>
+      </div>
+    );
   }
 
   return (

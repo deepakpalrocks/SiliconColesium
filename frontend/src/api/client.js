@@ -10,6 +10,12 @@ async function request(path, options = {}) {
   return data;
 }
 
+// Auth
+export const checkWallet = (wallet_address) =>
+  request("/auth/check", { method: "POST", body: JSON.stringify({ wallet_address }) });
+export const signup = (data) =>
+  request("/auth/signup", { method: "POST", body: JSON.stringify(data) });
+
 // Tokens
 export const getTokens = () => request("/tokens");
 export const getTokenPrices = () => request("/tokens/prices");

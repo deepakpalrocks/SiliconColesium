@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import cron from "node-cron";
 import { initDb } from "./db/database.js";
+import authRouter from "./routes/auth.js";
 import agentsRouter from "./routes/agents.js";
 import tradesRouter from "./routes/trades.js";
 import leaderboardRouter from "./routes/leaderboard.js";
@@ -21,6 +22,7 @@ await initDb();
 console.log("Database initialized");
 
 // Routes
+app.use("/api/auth", authRouter);
 app.use("/api/tokens", tokensRouter);
 app.use("/api/agents", agentsRouter);
 app.use("/api/trades", tradesRouter);
