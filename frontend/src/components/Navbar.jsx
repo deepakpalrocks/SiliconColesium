@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function Navbar() {
   const location = useLocation();
-  const { isConnected, isRegistered, user, walletAddress, connecting, connectWallet, signUp, disconnect } = useAuth();
+  const { isConnected, isRegistered, user, walletAddress, connecting, tokenBalance, connectWallet, signUp, disconnect } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [showSignup, setShowSignup] = useState(false);
   const [username, setUsername] = useState("");
   const [signupError, setSignupError] = useState("");
@@ -13,6 +15,7 @@ export default function Navbar() {
   const links = [
     { to: "/", label: "Dashboard" },
     { to: "/create", label: "Create Agent" },
+    { to: "/buy-tokens", label: "Buy Tokens" },
     { to: "/leaderboard", label: "Leaderboard" },
   ];
 
@@ -78,6 +81,13 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className="px-2 py-1.5 bg-dark-700 border border-dark-600 rounded text-sm text-gray-400 hover:text-white hover:bg-dark-600 transition-colors"
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {theme === "dark" ? "\u2600\uFE0F" : "\uD83C\uDF19"}
+            </button>
             {!isConnected ? (
               <button
                 onClick={handleConnect}
@@ -99,6 +109,7 @@ export default function Navbar() {
             ) : (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-accent-green font-medium">{user.username}</span>
+                <span className="text-xs text-yellow-400 font-mono bg-yellow-400/10 px-1.5 py-0.5 rounded">{tokenBalance} SCT</span>
                 <span className="text-xs text-gray-500 font-mono">{shortAddr(walletAddress)}</span>
                 <button
                   onClick={disconnect}

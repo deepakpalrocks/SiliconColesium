@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { BrowserProvider } from "ethers";
-import { checkWallet, signup as apiSignup } from "../api/client";
+import { checkWallet, signup as apiSignup, getSCTBalance } from "../api/client";
 
 const AuthContext = createContext(null);
 
@@ -8,6 +8,7 @@ export function AuthProvider({ children }) {
   const [walletAddress, setWalletAddress] = useState(null);
   const [user, setUser] = useState(null); // { id, username, wallet_address }
   const [connecting, setConnecting] = useState(false);
+  const [tokenBalance, setTokenBalance] = useState(0);
 
   // On mount, check if MetaMask is already connected
   useEffect(() => {
@@ -97,9 +98,30 @@ export function AuthProvider({ children }) {
     [walletAddress]
   );
 
+  const refreshTokenBalance = useCallback(async (addr) => {
+    const wallet = addr || walletAddress;
+    if (!wallet) return;
+    try {
+      const { balance } = await getSCTBalance(wallet);
+      setTokenBalance(balance);
+    } catch {
+      setTokenBalance(0);
+    }
+  }, [walletAddress]);
+
+  // Load token balance when user is set
+  useEffect(() => {
+    if (user?.wallet_address) {
+      refreshTokenBalance(user.wallet_address);
+      const interval = setInterval(() => refreshTokenBalance(user.wallet_address), 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user, refreshTokenBalance]);
+
   const disconnect = useCallback(() => {
     setWalletAddress(null);
     setUser(null);
+    setTokenBalance(0);
   }, []);
 
   return (
@@ -108,11 +130,13 @@ export function AuthProvider({ children }) {
         walletAddress,
         user,
         connecting,
+        tokenBalance,
         isConnected: !!walletAddress,
         isRegistered: !!user,
         connectWallet,
         signUp,
         disconnect,
+        refreshTokenBalance,
       }}
     >
       {children}

@@ -1,4 +1,4 @@
-const API_BASE = "/api";
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 async function request(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -26,10 +26,10 @@ export const getAgents = (userId) =>
 export const getAgent = (id) => request(`/agents/${id}`);
 export const createAgent = (data) =>
   request("/agents", { method: "POST", body: JSON.stringify(data) });
-export const toggleAgent = (id) =>
-  request(`/agents/${id}/toggle`, { method: "PATCH" });
-export const deleteAgent = (id) =>
-  request(`/agents/${id}`, { method: "DELETE" });
+export const toggleAgent = (id, user_id) =>
+  request(`/agents/${id}/toggle`, { method: "PATCH", body: JSON.stringify({ user_id }) });
+export const deleteAgent = (id, user_id) =>
+  request(`/agents/${id}`, { method: "DELETE", body: JSON.stringify({ user_id }) });
 
 // Trades
 export const getAgentTrades = (agentId, limit = 50) =>
@@ -37,6 +37,10 @@ export const getAgentTrades = (agentId, limit = 50) =>
 
 // Leaderboard
 export const getLeaderboard = () => request("/leaderboard");
+
+// SCT Token
+export const getSCTBalance = (walletAddress) =>
+  request(`/sct/balance/${walletAddress}`);
 
 // Manual trigger
 export const triggerEvaluation = () =>

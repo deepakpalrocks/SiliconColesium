@@ -8,6 +8,7 @@ import agentsRouter from "./routes/agents.js";
 import tradesRouter from "./routes/trades.js";
 import leaderboardRouter from "./routes/leaderboard.js";
 import tokensRouter from "./routes/tokens.js";
+import sctRouter from "./routes/sct.js";
 import { evaluateAllAgents } from "./cron/trader.js";
 
 const app = express();
@@ -27,6 +28,7 @@ app.use("/api/tokens", tokensRouter);
 app.use("/api/agents", agentsRouter);
 app.use("/api/trades", tradesRouter);
 app.use("/api/leaderboard", leaderboardRouter);
+app.use("/api/sct", sctRouter);
 
 // Manual trigger for testing
 app.post("/api/evaluate", async (_req, res) => {

@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
+import { ethers } from "ethers";
 import { queryAll, queryOne, execute } from "../db/database.js";
 import { AVAILABLE_TOKENS } from "./tokens.js";
+import { SCT_CONTRACT_ADDRESS, SCT_ABI, RPC_URL } from "../config/contract.js";
 
 const router = Router();
 
@@ -67,7 +69,7 @@ router.get("/:id", (req, res) => {
 });
 
 // POST /api/agents - create a new agent
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const { user_id, name, risk_level, budget, tokens, personality } = req.body;
 
   if (!user_id || !name || !risk_level || !budget || !tokens?.length) {
@@ -89,20 +91,31 @@ router.post("/", (req, res) => {
     return res.status(400).json({ error: "Budget must be between $10 and $100,000" });
   }
 
-  // Verify user exists (must be signed up)
-  const existingUser = queryOne("SELECT id FROM users WHERE id = ?", [user_id]);
-  if (!existingUser) {
+  // Verify user exists and get wallet address
+  const user = queryOne("SELECT id, wallet_address FROM users WHERE id = ?", [user_id]);
+  if (!user) {
     return res.status(401).json({ error: "You must sign up before creating an agent" });
   }
 
-  // Free tier: only 1 agent per user
+  let tokenBalance = 0;
+  try {
+    const provider = new ethers.JsonRpcProvider(RPC_URL);
+    const contract = new ethers.Contract(SCT_CONTRACT_ADDRESS, SCT_ABI, provider);
+    tokenBalance = Number(await contract.wholeTokenBalance(user.wallet_address));
+  } catch (err) {
+    console.error("Failed to read SCT balance:", err.message);
+    // If contract not deployed yet, allow 0 agents (blocks creation)
+  }
+
   const agentCount = queryOne(
     "SELECT COUNT(*) as count FROM agents WHERE user_id = ?",
     [user_id]
   );
-  if (agentCount && agentCount.count >= 1) {
+  if (agentCount && agentCount.count >= tokenBalance) {
     return res.status(403).json({
-      error: "Free tier allows only 1 AI agent. Upgrade to create more.",
+      error: `You need more SCT tokens to create another agent. You have ${tokenBalance} SCT and ${agentCount.count} agent(s). Buy tokens to create more.`,
+      tokenBalance,
+      agentCount: agentCount.count,
     });
   }
 
@@ -119,8 +132,12 @@ router.post("/", (req, res) => {
 
 // PATCH /api/agents/:id/toggle - activate/deactivate
 router.patch("/:id/toggle", (req, res) => {
+  const { user_id } = req.body;
   const agent = queryOne("SELECT * FROM agents WHERE id = ?", [req.params.id]);
   if (!agent) return res.status(404).json({ error: "Agent not found" });
+  if (!user_id || agent.user_id !== user_id) {
+    return res.status(403).json({ error: "Only the owner can toggle this agent" });
+  }
 
   const newState = agent.is_active ? 0 : 1;
   execute("UPDATE agents SET is_active = ? WHERE id = ?", [newState, agent.id]);
@@ -129,8 +146,12 @@ router.patch("/:id/toggle", (req, res) => {
 
 // DELETE /api/agents/:id
 router.delete("/:id", (req, res) => {
+  const { user_id } = req.body;
   const agent = queryOne("SELECT * FROM agents WHERE id = ?", [req.params.id]);
   if (!agent) return res.status(404).json({ error: "Agent not found" });
+  if (!user_id || agent.user_id !== user_id) {
+    return res.status(403).json({ error: "Only the owner can delete this agent" });
+  }
 
   execute("DELETE FROM trades WHERE agent_id = ?", [agent.id]);
   execute("DELETE FROM holdings WHERE agent_id = ?", [agent.id]);

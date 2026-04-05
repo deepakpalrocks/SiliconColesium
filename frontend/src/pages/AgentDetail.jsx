@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getAgent, toggleAgent, deleteAgent, triggerEvaluation } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import TradeList from "../components/TradeList";
 
 const RISK_COLORS = {
@@ -13,9 +14,11 @@ const RISK_COLORS = {
 export default function AgentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [agent, setAgent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [evaluating, setEvaluating] = useState(false);
+  const [showDecisions, setShowDecisions] = useState(false);
 
   useEffect(() => {
     loadAgent();
@@ -36,7 +39,7 @@ export default function AgentDetail() {
 
   async function handleToggle() {
     try {
-      await toggleAgent(id);
+      await toggleAgent(id, user?.id);
       loadAgent();
     } catch (err) {
       alert(err.message);
@@ -46,7 +49,7 @@ export default function AgentDetail() {
   async function handleDelete() {
     if (!confirm("Delete this agent and all its trade history?")) return;
     try {
-      await deleteAgent(id);
+      await deleteAgent(id, user?.id);
       navigate("/");
     } catch (err) {
       alert(err.message);
@@ -115,22 +118,26 @@ export default function AgentDetail() {
           >
             {evaluating ? "Running..." : "Evaluate Now"}
           </button>
-          <button
-            onClick={handleToggle}
-            className={`px-3 py-1.5 rounded text-sm border ${
-              agent.is_active
-                ? "border-accent-red/30 text-accent-red hover:bg-accent-red/10"
-                : "border-accent-green/30 text-accent-green hover:bg-accent-green/10"
-            }`}
-          >
-            {agent.is_active ? "Pause" : "Activate"}
-          </button>
-          <button
-            onClick={handleDelete}
-            className="px-3 py-1.5 border border-dark-600 rounded text-sm text-gray-500 hover:text-accent-red hover:border-accent-red/30"
-          >
-            Delete
-          </button>
+          {user?.id === agent.user_id && (
+            <>
+              <button
+                onClick={handleToggle}
+                className={`px-3 py-1.5 rounded text-sm border ${
+                  agent.is_active
+                    ? "border-accent-red/30 text-accent-red hover:bg-accent-red/10"
+                    : "border-accent-green/30 text-accent-green hover:bg-accent-green/10"
+                }`}
+              >
+                {agent.is_active ? "Pause" : "Activate"}
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-3 py-1.5 border border-dark-600 rounded text-sm text-gray-500 hover:text-accent-red hover:border-accent-red/30"
+              >
+                Delete
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -185,9 +192,19 @@ export default function AgentDetail() {
 
       {/* Recent Decisions */}
       {agent.recentDecisions?.length > 0 && (
-        <div className="bg-dark-800 border border-dark-600 rounded-lg p-4 mb-6">
-          <h2 className="text-lg font-semibold text-white mb-3">Recent AI Decisions</h2>
-          <div className="space-y-3">
+        <div className="bg-dark-800 border border-dark-600 rounded-lg mb-6">
+          <button
+            onClick={() => setShowDecisions((v) => !v)}
+            className="w-full flex items-center justify-between p-4 text-left hover:bg-dark-700/50 transition-colors rounded-lg"
+          >
+            <h2 className="text-lg font-semibold text-white">
+              Recent AI Decisions ({agent.recentDecisions.length})
+            </h2>
+            <span className={`text-gray-400 transition-transform ${showDecisions ? "rotate-180" : ""}`}>
+              &#9660;
+            </span>
+          </button>
+          {showDecisions && <div className="space-y-3 px-4 pb-4">
             {agent.recentDecisions.map((d) => (
               <div key={d.id} className="border-b border-dark-700 pb-3 last:border-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -200,6 +217,11 @@ export default function AgentDetail() {
                   >
                     {d.should_trade ? "TRADE" : "HOLD"}
                   </span>
+                  {d.raw_json?.actions?.length > 0 && (
+                    <span className="text-xs text-gray-500 font-mono">
+                      {d.raw_json.actions.length} action{d.raw_json.actions.length !== 1 ? "s" : ""}
+                    </span>
+                  )}
                   <span className="text-xs text-gray-500">
                     {new Date(d.created_at + "Z").toLocaleString()}
                   </span>
@@ -208,9 +230,37 @@ export default function AgentDetail() {
                 {d.market_analysis && (
                   <p className="text-xs text-gray-500 mt-1">{d.market_analysis}</p>
                 )}
+                {d.raw_json?.actions?.length > 0 && (
+                  <div className="mt-2 space-y-1.5">
+                    {d.raw_json.actions.map((a, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-2 bg-dark-900 rounded px-2.5 py-1.5 text-xs"
+                      >
+                        <span
+                          className={`px-1.5 py-0.5 rounded font-bold ${
+                            a.action === "BUY"
+                              ? "bg-accent-green/20 text-accent-green"
+                              : "bg-accent-red/20 text-accent-red"
+                          }`}
+                        >
+                          {a.action}
+                        </span>
+                        <span className="text-white font-mono">{a.token}</span>
+                        <span className="text-gray-400 font-mono">${a.amount_usd}</span>
+                        {a.confidence != null && (
+                          <span className="text-gray-500">{(a.confidence * 100).toFixed(0)}%</span>
+                        )}
+                        {a.reason && (
+                          <span className="text-gray-500 truncate max-w-xs">{a.reason}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
-          </div>
+          </div>}
         </div>
       )}
 
